@@ -132,13 +132,16 @@ const func_methods = {
         return dataArr;
     },
     //单元格数据生成二维数组
-    getCellDataDyadicArr: function(rangeObj, nullCellType){
+    getCellDataDyadicArr: function(rangeObj, nullCellType, preserveNullAsBlank){
         let dataArr = [];
 
         if(rangeObj.data == null){
             let rowArr = [];
 
-            if(nullCellType == "number"){
+            if(preserveNullAsBlank){
+                rowArr.push("");
+            }
+            else if(nullCellType == "number"){
                 rowArr.push(0);
             }
             else if(nullCellType == "text"){
@@ -161,7 +164,10 @@ const func_methods = {
                         }
 
                         if(value == null){
-                            if(nullCellType === "number"){
+                            if(preserveNullAsBlank){
+                                value = "";
+                            }
+                            else if(nullCellType === "number"){
                                 value = 0;
                             }
                             else if(nullCellType === "text"){
@@ -181,7 +187,10 @@ const func_methods = {
                 let value = getCellPrimitiveValue(rangeObj.data);
 
                 if(value == null || isRealNull(value)){
-                    if(nullCellType == "number"){
+                    if(preserveNullAsBlank){
+                        value = "";
+                    }
+                    else if(nullCellType == "number"){
                         value = 0;
                     }
                     else if(nullCellType == "text"){

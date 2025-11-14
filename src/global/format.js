@@ -1756,6 +1756,43 @@ function fuzzydate(s) {
     return o;
 }
 
+function shouldFormatSmallScientific(value) {
+    if (value == null) {
+        return false;
+    }
+
+    const str = value.toString();
+    if (!/[eE]/.test(str)) {
+        return false;
+    }
+
+    if (!isRealNum(value)) {
+        return false;
+    }
+
+    const num = Number(value);
+    if (!isFinite(num) || num === 0) {
+        return false;
+    }
+
+    const abs = Math.abs(num);
+    return abs < 1 && abs >= 1e-9;
+}
+
+function formatSmallScientific(value) {
+    let str = value.toFixed(12);
+
+    if (str.indexOf(".") > -1) {
+        str = str.replace(/\.?0+$/, "");
+    }
+
+    if (str === "-0") {
+        return "0";
+    }
+
+    return str;
+}
+
 export function genarate(value) {//万 单位格式增加！！！
     var ret = [];
     var m = null, ct = {}, v = value;
@@ -1818,6 +1855,12 @@ export function genarate(value) {//万 单位格式增加！！！
             }
             m = SSF.format(ct.fa, v);
         }
+    }
+    else if(shouldFormatSmallScientific(value)){
+        const num = Number(value);
+        m = formatSmallScientific(num);
+        ct = { "fa": "General", "t": "n" };
+        v = num;
     }
     else if(value.toString().indexOf("%") > -1){
         var index = value.toString().indexOf("%");

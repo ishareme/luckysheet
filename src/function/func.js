@@ -97,12 +97,19 @@ function luckysheet_compareWith() {
     //formula.operatorjson; 存储运算符和比较符
     let sp = arguments[1]; //操作符
 
+    const data_fp = arguments[0];
+    const data_tp = arguments[2];
+    const isConcatOperator = sp == "&";
+    const isEqualityOperator = sp == "=" || sp == "<>";
+    const compareWithTextLiteral = isEqualityOperator && (getObjType(data_fp) == "string" || getObjType(data_tp) == "string");
+    const shouldUseTextMode = isConcatOperator || compareWithTextLiteral;
+    const shouldPreserveNullAsBlank = compareWithTextLiteral;
+
     //参数一
-    let data_fp = arguments[0];
     let fp;
     if(getObjType(data_fp) == "object" && data_fp.startCell != null){ //参数是选区
-        if(sp == "&"){
-            fp = func_methods.getCellDataDyadicArr(data_fp, "text");
+        if(shouldUseTextMode){
+            fp = func_methods.getCellDataDyadicArr(data_fp, "text", shouldPreserveNullAsBlank);
         }
         else{
             fp = func_methods.getCellDataDyadicArr(data_fp, "number");
@@ -117,11 +124,10 @@ function luckysheet_compareWith() {
     }
 
     //参数二
-    let data_tp = arguments[2];
     let tp;
     if(getObjType(data_tp) == "object" && data_tp.startCell != null){ //参数是选区
-        if(sp == "&"){
-            tp = func_methods.getCellDataDyadicArr(data_tp, "text");
+        if(shouldUseTextMode){
+            tp = func_methods.getCellDataDyadicArr(data_tp, "text", shouldPreserveNullAsBlank);
         }
         else{
             tp = func_methods.getCellDataDyadicArr(data_tp, "number");
