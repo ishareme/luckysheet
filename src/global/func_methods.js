@@ -42,6 +42,76 @@ function getInlineStringText(cell){
     return null;
 }
 
+function parseNumericText(text){
+    if(typeof text !== "string"){
+        return null;
+    }
+
+    let str = text.trim();
+    if(str === ""){
+        return null;
+    }
+
+    let isPercent = false;
+    if(str.endsWith("%")){
+        isPercent = true;
+        str = str.slice(0, -1).trim();
+    }
+
+    let isNegativeWithParentheses = false;
+    if(str.startsWith("(") && str.endsWith(")")){
+        isNegativeWithParentheses = true;
+        str = str.slice(1, -1).trim();
+    }
+
+    str = str.replace(/,/g, "");
+    if(str === "" || !isRealNum(str)){
+        return null;
+    }
+
+    let num = parseFloat(str);
+    if(isNegativeWithParentheses){
+        num = -num;
+    }
+
+    if(isPercent){
+        num = num / 100;
+    }
+
+    return num;
+}
+
+function coerceNumericCellValue(cell){
+    if(cell == null || cell.ct == null){
+        return null;
+    }
+
+    if(cell.ct.t !== "n"){
+        return null;
+    }
+
+    if(typeof cell.v === "number"){
+        return cell.v;
+    }
+
+    let parsed;
+    if(typeof cell.v === "string"){
+        parsed = parseNumericText(cell.v);
+        if(parsed != null){
+            return parsed;
+        }
+    }
+
+    if(cell.v == null && typeof cell.m === "string"){
+        parsed = parseNumericText(cell.m);
+        if(parsed != null){
+            return parsed;
+        }
+    }
+
+    return null;
+}
+
 function getCellPrimitiveValue(cell){
     if(cell == null){
         return cell;
@@ -49,6 +119,11 @@ function getCellPrimitiveValue(cell){
 
     if(getObjType(cell) !== "object"){
         return cell;
+    }
+
+    const numericValue = coerceNumericCellValue(cell);
+    if(numericValue != null){
+        return numericValue;
     }
 
     let value = cell.v;
