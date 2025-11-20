@@ -864,6 +864,20 @@ export default {
                 },
             ],
         },
+        STDEV: {
+            d: "Calculates the standard deviation based on a sample, ignoring text and logical values.",
+            a: "Standard deviation of a sample.",
+            p: [
+                {
+                    name: "value1",
+                    detail: "The first value or range of the sample.",
+                },
+                {
+                    name: "value2",
+                    detail: "Additional values or ranges to include in the sample.",
+                },
+            ],
+        },
         STDEVA: {
             d: "Calculates the standard deviation based on a sample, setting text to the value `0`.",
             a: "Standard deviation of sample (text as 0).",

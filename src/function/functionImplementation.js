@@ -3133,7 +3133,7 @@ const functionImplementation = {
                         break;
                     case 7:    //STDEV
                     case 107:
-                        return window.luckysheet_function.STDEVA.f.apply(window.luckysheet_function.STDEVA, arr);
+                        return window.luckysheet_function.STDEV.f.apply(window.luckysheet_function.STDEV, arr);
                         break;
                     case 8:    //STDEVP
                     case 108:
@@ -5492,6 +5492,73 @@ const functionImplementation = {
                     return b - a;
                 })[n - 1];
             }
+        }
+        catch (e) {
+            var err = e;
+            err = formula.errorInfo(err);
+            return [formula.error.v, err];
+        }
+    },
+    "STDEV": function() {
+        //必要参数个数错误检测
+        if (arguments.length < this.m[0] || arguments.length > this.m[1]) {
+            return formula.error.na;
+        }
+
+        //参数类型错误检测
+        for (var i = 0; i < arguments.length; i++) {
+            var p = formula.errorParamCheck(this.p, arguments[i], i);
+
+            if (!p[0]) {
+                return formula.error.v;
+            }
+        }
+
+        try {
+            var dataArr = [];
+
+            for (var i = 0; i < arguments.length; i++) {
+                var data = arguments[i];
+
+                if(getObjType(data) == "array"){
+                    if(getObjType(data[0]) == "array" && !func_methods.isDyadicArr(data)){
+                        return formula.error.v;
+                    }
+
+                    //忽略非数字值
+                    dataArr = dataArr.concat(func_methods.getDataArr(data, true));
+                }
+                else if(getObjType(data) == "object" && data.startCell != null){
+                    dataArr = dataArr.concat(func_methods.getCellDataArr(data, "number", true));
+                }
+                else{
+                    if(!isRealNum(data)){
+                        return formula.error.v;
+                    }
+
+                    dataArr.push(data);
+                }
+            }
+
+            var dataArr_n = [];
+
+            for(var j = 0; j < dataArr.length; j++){
+                var number = dataArr[j];
+
+                if(isRealNum(number)){
+                    dataArr_n.push(parseFloat(number));
+                }
+            }
+
+            if(dataArr_n.length == 0){
+                return formula.error.d;
+            }
+
+            if(dataArr_n.length == 1){
+                return formula.error.d;
+            }
+
+            return func_methods.standardDeviation_s(dataArr_n);
         }
         catch (e) {
             var err = e;
