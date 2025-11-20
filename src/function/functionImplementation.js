@@ -19899,9 +19899,13 @@ const functionImplementation = {
                 return logical_test;
             }
 
-            //结果为 TRUE
-            var value_if_true = func_methods.getFirstValue(arguments[1], "text");
-            if(valueIsError(value_if_true) && value_if_true!=error.d){
+            if(logical_test){
+                // Only evaluate the TRUE branch when needed to avoid propagating errors from the FALSE branch
+                var value_if_true = func_methods.getFirstValue(arguments[1], "text");
+                if(valueIsError(value_if_true) && value_if_true!=error.d){
+                    return value_if_true;
+                }
+
                 return value_if_true;
             }
 
@@ -19914,12 +19918,7 @@ const functionImplementation = {
                 }
             }
 
-            if(logical_test){
-                return value_if_true;
-            }
-            else{
-                return value_if_false;
-            }
+            return value_if_false;
         }
         catch (e) {
             var err = e;

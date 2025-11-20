@@ -28,6 +28,28 @@ const DATE_FORMAT_OVERRIDES = {
     "mm/dd/yyyy h:mm:ss am/pm": "yyyy-mm-dd hh:mm:ss AM/PM"
 };
 
+function formatSmallExponentialNumber(value) {
+    if (value == null || !isFinite(value)) {
+        return null;
+    }
+
+    const absVal = Math.abs(value);
+    if (absVal === 0 || absVal >= 1 || absVal < 1e-9) {
+        return null;
+    }
+
+    let str = value.toFixed(12);
+    if (str.indexOf(".") > -1) {
+        str = str.replace(/\.?0+$/, "");
+    }
+
+    if (str === "-0") {
+        str = "0";
+    }
+
+    return str;
+}
+
 function normalizeDateFormat(ct) {
     if (!ct || ct.fa == null) {
         return;
@@ -164,24 +186,33 @@ function setcellvalue(r, c, d, v) {
 
             normalizeDateFormat(cell.ct);
 
-            if (cell.v == Infinity || cell.v == -Infinity) {
+            if (cell.ct != null && cell.ct.fa != null && cell.ct.fa != "General") {
+                let maskValue = update(cell.ct.fa, cell.v);
+                cell.m = maskValue != null ? maskValue.toString() : maskValue;
+            } else if (cell.v == Infinity || cell.v == -Infinity) {
                 cell.m = cell.v.toString();
             } else {
                 if (cell.v.toString().indexOf("e") > -1) {
-                    let len;
-                    if (cell.v.toString().split(".").length == 1) {
-                        len = 0;
-                    } else {
-                        len = cell.v
-                            .toString()
-                            .split(".")[1]
-                            .split("e")[0].length;
-                    }
-                    if (len > 5) {
-                        len = 5;
-                    }
+                    const formattedSmall = formatSmallExponentialNumber(cell.v);
 
-                    cell.m = cell.v.toExponential(len).toString();
+                    if (formattedSmall != null) {
+                        cell.m = formattedSmall;
+                    } else {
+                        let len;
+                        if (cell.v.toString().split(".").length == 1) {
+                            len = 0;
+                        } else {
+                            len = cell.v
+                                .toString()
+                                .split(".")[1]
+                                .split("e")[0].length;
+                        }
+                        if (len > 5) {
+                            len = 5;
+                        }
+
+                        cell.m = cell.v.toExponential(len).toString();
+                    }
                 } else {
                     let v_p = Math.round(cell.v * 1000000000) / 1000000000;
                     if (cell.ct == null) {
