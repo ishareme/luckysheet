@@ -6669,8 +6669,15 @@ export function insertImage(src, options = {}) {
       colIndex = Store.visibledatacolumn.length;
     }
 
-    let left = colIndex == 0 ? 0 : Store.visibledatacolumn[colIndex - 1];
-    let top = rowIndex == 0 ? 0 : Store.visibledatarow[rowIndex - 1];
+    // Store.visibledatacolumn/row are already scaled by Store.zoomRatio,
+    // but image coordinates are stored unscaled (scaled later when rendering),
+    // so convert back to unscaled to avoid double zooming.
+    let left =
+      colIndex == 0
+        ? 0
+        : Store.visibledatacolumn[colIndex - 1] / Store.zoomRatio;
+    let top =
+      rowIndex == 0 ? 0 : Store.visibledatarow[rowIndex - 1] / Store.zoomRatio;
 
     let image = new Image();
     image.onload = function () {
@@ -6695,16 +6702,17 @@ export function insertImage(src, options = {}) {
     image.src = src;
   } else {
     let images = file.images || {};
-    let config = file.config;
+    let config = file.config || {};
     let zoomRatio = file.zoomRatio || 1;
 
     let rowheight = file.row;
     let visibledatarow = file.visibledatarow || [];
     if (visibledatarow.length === 0) {
       let rh_height = 0;
+      const defaultRowLen = file.defaultRowHeight || Store.defaultrowlen;
 
       for (let r = 0; r < rowheight; r++) {
-        let rowlen = Store.defaultrowlen;
+        let rowlen = defaultRowLen;
 
         if (config["rowlen"] != null && config["rowlen"][r] != null) {
           rowlen = config["rowlen"][r];
@@ -6725,9 +6733,11 @@ export function insertImage(src, options = {}) {
     let visibledatacolumn = file.visibledatacolumn || [];
     if (visibledatacolumn.length === 0) {
       let ch_width = 0;
+      // Respect per-sheet default column width if provided by file import
+      const defaultColLen = file.defaultColWidth || Store.defaultcollen;
 
       for (let c = 0; c < colwidth; c++) {
-        let firstcolumnlen = Store.defaultcollen;
+        let firstcolumnlen = defaultColLen;
 
         if (config["columnlen"] != null && config["columnlen"][c] != null) {
           firstcolumnlen = config["columnlen"][c];
@@ -6768,8 +6778,10 @@ export function insertImage(src, options = {}) {
       colIndex = visibledatacolumn.length;
     }
 
-    let left = colIndex == 0 ? 0 : visibledatacolumn[colIndex - 1];
-    let top = rowIndex == 0 ? 0 : visibledatarow[rowIndex - 1];
+    // visibledatacolumn/row built above are scaled by zoomRatio; convert back.
+    let left =
+      colIndex == 0 ? 0 : visibledatacolumn[colIndex - 1] / zoomRatio;
+    let top = rowIndex == 0 ? 0 : visibledatarow[rowIndex - 1] / zoomRatio;
 
     let image = new Image();
     image.onload = function () {
