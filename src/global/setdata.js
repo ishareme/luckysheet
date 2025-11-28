@@ -174,9 +174,22 @@ function setcellvalue(r, c, d, v) {
         }
         cell.v = vupdate;
     } else {
+        // If a formula returns a textual value (e.g. TEXT()), keep it as text even if it looks numeric
+        if (cell.f != null && typeof vupdate === "string") {
+            cell.m = vupdateStr;
+            cell.v = vupdate;
+            if (cell.ct == null) {
+                cell.ct = { fa: "General", t: "g" };
+            }
+
+            d[r][c] = cell;
+            return cell;
+        }
+
         if (
             cell.f != null &&
             isRealNum(vupdate) &&
+            typeof vupdate !== "string" &&
             !/^\d{6}(18|19|20)?\d{2}(0[1-9]|1[12])(0[1-9]|[12]\d|3[01])\d{3}(\d|X)$/i.test(vupdate)
         ) {
             cell.v = parseFloat(vupdate);
