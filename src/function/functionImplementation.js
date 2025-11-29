@@ -3293,11 +3293,30 @@ const functionImplementation = {
             }
 
             function getCriteriaResult(range, criter){
-                if (!/[<>=!*?]/.test(criter)) {
-                    criter = '=="' + criter + '"';
+                criter = criter == null ? "" : criter.toString();
+                var hasWildcard = criter.indexOf("*") > -1 || criter.indexOf("?") > -1;
+                var criteriaExpression = criter;
+
+                if(!hasWildcard && !/[<>=!*?]/.test(criteriaExpression)){
+                    criteriaExpression = "==" + JSON.stringify(criteriaExpression);
                 }
 
-                criter = criter.replace("<>", "!=");
+                criteriaExpression = criteriaExpression.replace("<>", "!=");
+
+                function matchValue(value){
+                    if(hasWildcard){
+                        return formula.isWildcard(value, criter);
+                    }
+
+                    var valueExpression = (typeof value === "string") ? JSON.stringify(value) : value; // escape strings so special chars don't break evaluation
+
+                    try{
+                        return new Function("return " + valueExpression + criteriaExpression)();
+                    }
+                    catch (err){
+                        return false;
+                    }
+                }
 
                 var matches = 0;
 
@@ -3305,24 +3324,8 @@ const functionImplementation = {
                     for (var i = 0; i < range.length; i++) {
                         for(var j = 0; j < range[i].length; j++){
                             if(range[i][j] != null && !isRealNull(range[i][j].v)){
-                                var value = range[i][j].v;
-
-                                if(criter.indexOf("*") > -1 || criter.indexOf("?") > -1){
-                                    if(formula.isWildcard(value, criter)){
-                                        matches++;
-                                    }
-                                }
-                                else{
-                                    if (typeof value !== 'string') {
-                                        if (new Function("return " + value + criter)()) {
-                                            matches++;
-                                        }
-                                    }
-                                    else {
-                                        if (new Function("return " + '"' + value + '"' + criter)()) {
-                                            matches++;
-                                        }
-                                    }
+                                if(matchValue(range[i][j].v)){
+                                    matches++;
                                 }
                             }
                         }
@@ -3330,24 +3333,8 @@ const functionImplementation = {
                 }
                 else{
                     if(range != null && !isRealNull(range.v)){
-                        var value = range.v;
-
-                        if(criter.indexOf("*") > -1 || criter.indexOf("?") > -1){
-                            if(formula.isWildcard(value, criter)){
-                                matches++;
-                            }
-                        }
-                        else{
-                            if (typeof value !== 'string') {
-                                if (new Function("return " + value + criter)()) {
-                                    matches++;
-                                }
-                            }
-                            else {
-                                if (new Function("return " + '"' + value + '"' + criter)()) {
-                                    matches++;
-                                }
-                            }
+                        if(matchValue(range.v)){
+                            matches++;
                         }
                     }
                 }
