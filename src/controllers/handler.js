@@ -6040,8 +6040,6 @@ export default function luckysheetHandler() {
                 }
             }
 
-            const locale_fontjson = locale().fontjson;
-
             // hook
             if (!method.createHookFunction("rangePasteBefore", Store.luckysheet_select_save, txtdata)) {
                 return;
@@ -6059,263 +6057,46 @@ export default function luckysheetHandler() {
                     selection.pasteHandlerOfCutPaste(Store.luckysheet_copy_save);
                     selection.clearcopy(e);
                 } else {
-                    selection.pasteHandlerOfCopyPaste(Store.luckysheet_copy_save);
+                    // 仅粘贴值，保留目标单元格原格式
+                    $("#luckysheet-copy-content").html(txtdata);
+                    const cellElements = "th, td";
+                    const rows = [];
+                    $("#luckysheet-copy-content")
+                        .find("table tr")
+                        .each(function() {
+                            const cells = [];
+                            $(this)
+                                .find(cellElements)
+                                .each(function() {
+                                    cells.push($(this).text());
+                                });
+                            rows.push(cells.join("\t"));
+                        });
+
+                    selection.pasteHandler(rows.join("\n"));
+                    $("#luckysheet-copy-content").empty();
                 }
             } else if (txtdata.indexOf("luckysheet_copy_action_image") > -1) {
                 imageCtrl.pasteImgItem();
             } else {
                 if (txtdata.indexOf("table") > -1) {
                     $("#luckysheet-copy-content").html(txtdata);
-
-                    let data = new Array($("#luckysheet-copy-content").find("table tr").length);
-                    let colLen = 0;
                     const cellElements = "th, td";
-                    $("#luckysheet-copy-content")
-                        .find("table tr")
-                        .eq(0)
-                        .find(cellElements)
-                        .each(function() {
-                            let colspan = parseInt($(this).attr("colspan"));
-                            if (isNaN(colspan)) {
-                                colspan = 1;
-                            }
-                            colLen += colspan;
-                        });
-
-                    for (let i = 0; i < data.length; i++) {
-                        data[i] = new Array(colLen);
-                    }
-
-                    let r = 0;
-                    let borderInfo = {};
+                    const rows = [];
                     $("#luckysheet-copy-content")
                         .find("table tr")
                         .each(function() {
-                            let $tr = $(this);
-                            let c = 0;
-                            $tr.find(cellElements).each(function() {
-                                let $td = $(this);
-                                let cell = {};
-                                let txt = $td.text();
-                                if ($.trim(txt).length == 0) {
-                                    cell.v = null;
-                                    cell.m = "";
-                                } else {
-                                    let mask = genarate($td.text());
-                                    cell.v = mask[2];
-                                    cell.ct = mask[1];
-                                    cell.m = mask[0];
-                                }
-
-                                let bg = $td.css("background-color");
-                                if (bg == "rgba(0, 0, 0, 0)") {
-                                    bg = null;
-                                }
-
-                                cell.bg = bg;
-
-                                let bl = $td.css("font-weight");
-                                if (bl == 400 || bl == "normal") {
-                                    cell.bl = 0;
-                                } else {
-                                    cell.bl = 1;
-                                }
-
-                                // 检测下划线
-                                let un = $td.css("text-decoration");
-                                if (un.indexOf("underline") != -1) {
-                                    cell.un = 1;
-                                }
-
-                                let it = $td.css("font-style");
-                                if (it == "normal") {
-                                    cell.it = 0;
-                                } else {
-                                    cell.it = 1;
-                                }
-
-                                let ff = $td.css("font-family");
-                                let ffs = ff.split(",");
-                                for (let i = 0; i < ffs.length; i++) {
-                                    let fa = $.trim(ffs[i].toLowerCase());
-                                    fa = locale_fontjson[fa];
-                                    if (fa == null) {
-                                        cell.ff = 0;
-                                    } else {
-                                        cell.ff = fa;
-                                        break;
-                                    }
-                                }
-                                let fs = Math.round((parseInt($td.css("font-size")) * 72) / 96);
-                                cell.fs = fs;
-
-                                let fc = $td.css("color");
-                                cell.fc = fc;
-
-                                // 水平对齐属性
-                                let ht = $td.css("text-align");
-                                if (ht == "center") {
-                                    cell.ht = 0;
-                                } else if (ht == "right") {
-                                    cell.ht = 2;
-                                } else {
-                                    cell.ht = 1;
-                                }
-
-                                // 垂直对齐属性
-                                let vt = $td.css("vertical-align");
-                                if (vt == "middle") {
-                                    cell.vt = 0;
-                                } else if (vt == "top" || vt == "text-top") {
-                                    cell.vt = 1;
-                                } else {
-                                    cell.vt = 2;
-                                }
-
-                                while (c < colLen && data[r][c] != null) {
-                                    c++;
-                                }
-
-                                if (c == colLen) {
-                                    return true;
-                                }
-
-                                if (data[r][c] == null) {
-                                    data[r][c] = cell;
-                                    let rowspan = parseInt($td.attr("rowspan"));
-                                    let colspan = parseInt($td.attr("colspan"));
-
-                                    if (isNaN(rowspan)) {
-                                        rowspan = 1;
-                                    }
-
-                                    if (isNaN(colspan)) {
-                                        colspan = 1;
-                                    }
-
-                                    let r_ab = Store.luckysheet_select_save[0]["row"][0] + r;
-                                    let c_ab = Store.luckysheet_select_save[0]["column"][0] + c;
-
-                                    for (let rp = 0; rp < rowspan; rp++) {
-                                        for (let cp = 0; cp < colspan; cp++) {
-                                            if (rp == 0) {
-                                                let bt = $td.css("border-top");
-                                                if (
-                                                    bt != null &&
-                                                    bt.length > 0 &&
-                                                    bt.substr(0, 3).toLowerCase() != "0px"
-                                                ) {
-                                                    let width = $td.css("border-top-width");
-                                                    let type = $td.css("border-top-style");
-                                                    let color = $td.css("border-top-color");
-                                                    let borderconfig = menuButton.getQKBorder(width, type, color);
-
-                                                    if (borderInfo[r + rp + "_" + (c + cp)] == null) {
-                                                        borderInfo[r + rp + "_" + (c + cp)] = {};
-                                                    }
-
-                                                    borderInfo[r + rp + "_" + (c + cp)].t = {
-                                                        style: borderconfig[0],
-                                                        color: borderconfig[1],
-                                                    };
-                                                }
-                                            }
-
-                                            if (rp == rowspan - 1) {
-                                                let bb = $td.css("border-bottom");
-                                                if (
-                                                    bb != null &&
-                                                    bb.length > 0 &&
-                                                    bb.substr(0, 3).toLowerCase() != "0px"
-                                                ) {
-                                                    let width = $td.css("border-bottom-width");
-                                                    let type = $td.css("border-bottom-style");
-                                                    let color = $td.css("border-bottom-color");
-                                                    let borderconfig = menuButton.getQKBorder(width, type, color);
-
-                                                    if (borderInfo[r + rp + "_" + (c + cp)] == null) {
-                                                        borderInfo[r + rp + "_" + (c + cp)] = {};
-                                                    }
-
-                                                    borderInfo[r + rp + "_" + (c + cp)].b = {
-                                                        style: borderconfig[0],
-                                                        color: borderconfig[1],
-                                                    };
-                                                }
-                                            }
-
-                                            if (cp == 0) {
-                                                let bl = $td.css("border-left");
-                                                if (
-                                                    bl != null &&
-                                                    bl.length > 0 &&
-                                                    bl.substr(0, 3).toLowerCase() != "0px"
-                                                ) {
-                                                    let width = $td.css("border-left-width");
-                                                    let type = $td.css("border-left-style");
-                                                    let color = $td.css("border-left-color");
-                                                    let borderconfig = menuButton.getQKBorder(width, type, color);
-
-                                                    if (borderInfo[r + rp + "_" + (c + cp)] == null) {
-                                                        borderInfo[r + rp + "_" + (c + cp)] = {};
-                                                    }
-
-                                                    borderInfo[r + rp + "_" + (c + cp)].l = {
-                                                        style: borderconfig[0],
-                                                        color: borderconfig[1],
-                                                    };
-                                                }
-                                            }
-
-                                            if (cp == colspan - 1) {
-                                                let br = $td.css("border-right");
-                                                if (
-                                                    br != null &&
-                                                    br.length > 0 &&
-                                                    br.substr(0, 3).toLowerCase() != "0px"
-                                                ) {
-                                                    let width = $td.css("border-right-width");
-                                                    let type = $td.css("border-right-style");
-                                                    let color = $td.css("border-right-color");
-                                                    let borderconfig = menuButton.getQKBorder(width, type, color);
-
-                                                    if (borderInfo[r + rp + "_" + (c + cp)] == null) {
-                                                        borderInfo[r + rp + "_" + (c + cp)] = {};
-                                                    }
-
-                                                    borderInfo[r + rp + "_" + (c + cp)].r = {
-                                                        style: borderconfig[0],
-                                                        color: borderconfig[1],
-                                                    };
-                                                }
-                                            }
-
-                                            if (rp == 0 && cp == 0) {
-                                                continue;
-                                            }
-
-                                            data[r + rp][c + cp] = { mc: { r: r_ab, c: c_ab } };
-                                        }
-                                    }
-
-                                    if (rowspan > 1 || colspan > 1) {
-                                        let first = { rs: rowspan, cs: colspan, r: r_ab, c: c_ab };
-                                        data[r][c].mc = first;
-                                    }
-                                }
-
-                                c++;
-
-                                if (c == colLen) {
-                                    return true;
-                                }
-                            });
-
-                            r++;
+                            const cells = [];
+                            $(this)
+                                .find(cellElements)
+                                .each(function() {
+                                    cells.push($(this).text());
+                                });
+                            rows.push(cells.join("\t"));
                         });
 
-                    Store.luckysheet_selection_range = [];
-                    selection.pasteHandler(data, borderInfo);
+                    // Only paste values so the target cells keep their existing formatting.
+                    selection.pasteHandler(rows.join("\n"));
                     $("#luckysheet-copy-content").empty();
                 }
 
